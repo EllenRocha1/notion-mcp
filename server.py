@@ -1,10 +1,14 @@
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from notion_client import Client
+from dotenv import load_dotenv
 import os
 import sys
 
-# Inicializa o servidor FastMCP
-mcp = FastMCP("Notion MCP")
+# Carrega as variáveis de ambiente do arquivo .env
+load_dotenv()
+
+# Inicializa o servidor MCP
+mcp = MCPServer("Notion MCP")
 
 # Configuração do Notion Client
 # O token deve ser passado como variável de ambiente NOTION_TOKEN
@@ -80,6 +84,31 @@ def create_page_in_db(database_id: str, title: str) -> str:
         return f"Página '{title}' criada com sucesso! ID: {new_page['id']}"
     except Exception as e:
         return f"Falha ao criar página: {str(e)}"
+
+@mcp.tool()
+def append_task(page_id: str, task: str) -> str:
+    """
+    Adiciona um novo item de to-do (tarefa) ao final de uma página no Notion.
+    """
+    if not notion:
+         return "Erro: NOTION_TOKEN não configurado no servidor."
+         
+    try:
+        notion.blocks.children.append(
+            block_id=page_id,
+            children=[
+                {
+                    "object": "block",
+                    "type": "to_do",
+                    "to_do": {
+                        "rich_text": [{"type": "text", "text": {"content": task}}]
+                    }
+                }
+            ]
+        )
+        return f"Tarefa '{task}' adicionada com sucesso à página {page_id}!"
+    except Exception as e:
+        return f"Falha ao adicionar tarefa: {str(e)}"
 
 if __name__ == "__main__":
     # Inicia o servidor via stdin/stdout
